@@ -105,7 +105,6 @@ class MusicSync(object):
                 continue
 
             added = self.api.add_songs_to_playlist(plid, song_id)
-            print added
             print " done adding to playlist"
             added_files += 1
 

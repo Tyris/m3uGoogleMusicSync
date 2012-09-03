@@ -2,6 +2,8 @@ build/
 Lib/
 Scripts/
 *.m3u
+password.txt
+gmusicapi.log
 
 #################
 ## Eclipse
