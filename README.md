@@ -19,8 +19,14 @@ It does not remove duplicate entries from playlists or handle multiple entries.
     from musicsync import MusicSync
     ms = MusicSync()
     # Will prompt for Email and Password - if 2-factor auth is on you'll need to generate a one-time password
+
+    # To sync a playlist
     ms.sync_playlist("c:/path/to/playlist.m3u")
 
+    # To sync a playlist including removing files that are no longer listed locally
+    ms.sync_playlist("/path/to/playlist.m3u", remove_missing=True)
+
+    # To delete a song from the cloud (provided only as convenience - must know the song ID)
     ms.delete_song("song_id")
 
 
