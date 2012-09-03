@@ -1,4 +1,4 @@
-Provides a utility class around the Google Music API that allows for easy synching of m3u playlists.
+Provides a utility class around the Google Music API that allows for easy syncing of m3u playlists.
 
 ##Features
 
