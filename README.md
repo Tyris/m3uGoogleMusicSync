@@ -33,7 +33,7 @@ Requires:
 
 API used: https://github.com/simon-weber/Unofficial-Google-Music-API
 
-Thanks to: Kevion Kwok and Simon Weber
+Thanks to: Kevin Kwok and Simon Weber
 
 Use at your own risk - especially for existing playlists
 
