@@ -36,6 +36,7 @@ from gmusicapi.api import Api
 import eyeD3
 import json
 import os
+import time
 from getpass import getpass
 
 MAX_UPLOAD_ATTEMPTS_PER_FILE = 3
@@ -87,6 +88,7 @@ class MusicSync(object):
                 continue
             print ""
             print "Adding: %s" % os.path.basename(fn)
+            time.sleep(.3) # Don't spam the server too fast...
             online = self.find_song(fn)
             song_id = None
             if online:
@@ -98,7 +100,11 @@ class MusicSync(object):
                 while not result and attempts < MAX_UPLOAD_ATTEMPTS_PER_FILE:
                     print "   uploading... (may take a while)"
                     attempts += 1
-                    result = self.api.upload(fn)
+                    try:
+                        result = self.api.upload(fn)
+                    except:
+                        result = []
+                        time.sleep(5)
                 if not result:
                     print "      upload failed - skipping"
                 else:
