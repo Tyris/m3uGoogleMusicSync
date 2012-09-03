@@ -17,12 +17,15 @@ It does not remove duplicate entries from playlists or handle multiple entries.
 **TODO:** Add optional duplicate remover
 
 ##Usage
-ms = MusicSync()
-# Will prompt for Email and Password - if 2-factor auth is on you'll need to generate a one-
-time password
-ms.sync_playlist("c:/path/to/playlist.m3u")
 
-ms.delete_song("song_id")
+    from musicsync import MusicSync
+    ms = MusicSync()
+    # Will prompt for Email and Password - if 2-factor auth is on you'll need to generate a one-
+    time password
+    ms.sync_playlist("c:/path/to/playlist.m3u")
+
+    ms.delete_song("song_id")
+
 
 - - -
 
