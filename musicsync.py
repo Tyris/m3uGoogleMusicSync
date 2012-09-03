@@ -53,18 +53,22 @@ class MusicSync(object):
             print "Login failed..."
             return
 
+        print ""
         print "Logged in as %s" % email
+        print ""
 
         print "Fetching playlists from Google..."
         self.playlists = self.api.get_all_playlist_ids(auto=False, always_id_lists=True)
         print "Got %d playlists." % len(self.playlists['user'])
+        print ""
 
     def sync_playlist(self, filename, remove_missing=False):
         title = os.path.splitext(os.path.basename(filename))[0]
         print "Synching playlist: %s" % filename
         if title not in self.playlists['user']:
-            print " didn't exist... creating..."
+            print "   didn't exist... creating..."
             self.playlists['user'][title] = [self.api.create_playlist(title)]
+        print ""
 
         plid = self.playlists['user'][title][0]
         goog_songs = self.api.get_playlist_songs(plid)
@@ -81,40 +85,43 @@ class MusicSync(object):
             if self.file_already_in_list(fn, goog_songs):
                 existing_files += 1
                 continue
+            print ""
             print "Adding: %s" % os.path.basename(fn)
             online = self.find_song(fn)
             song_id = None
             if online:
                 song_id = online['id']
-                print " already uploaded [%s]" % song_id
+                print "   already uploaded [%s]" % song_id
             else:
                 attempts = 0
                 result = []
                 while not result and attempts < MAX_UPLOAD_ATTEMPTS_PER_FILE:
-                    print " attempting upload..."
+                    print "   attempting upload..."
                     attempts += 1
                     result = self.api.upload(fn)
                 if not result:
-                    print " upload failed - skipping"
+                    print "      upload failed - skipping"
                 else:
                     song_id = result[fn]
-                    print " upload complete [%s]" % song_id
+                    print "   upload complete [%s]" % song_id
 
             if not song_id:
                 failed_files += 1
                 continue
 
             added = self.api.add_songs_to_playlist(plid, song_id)
-            print " done adding to playlist"
+            print "   done adding to playlist"
             added_files += 1
 
         if remove_missing:
             for s in goog_songs:
+                print ""
                 print "Removing: %s" % s['title']
                 self.api.remove_songs_from_playlist(plid, s.id)
                 removed_files += 1
 
         print ""
+        print "---"
         print "%d songs unmodified" % existing_files
         print "%d songs added" % added_files
         print "%d songs failed" % failed_files
