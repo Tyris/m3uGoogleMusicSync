@@ -27,11 +27,12 @@ It does not remove duplicate entries from playlists or handle multiple entries.
 ##Requirements
 Requires:
 * gmusicapi (can use: pip install gmusicapi - or get it from https://github.com/simon-weber/Unofficial-Google-Music-API)
-* eyeD3 (pip doesn't seem to install it properly at least on Windows... can get from http://eyed3.nicfit.net/)
+* eyeD3 (pip doesn't seem to install it properly, at least on Windows... can get from http://eyed3.nicfit.net/)
 
 - - -
 
 API used: https://github.com/simon-weber/Unofficial-Google-Music-API
+
 Thanks to: Kevion Kwok and Simon Weber
 
 Use at your own risk - especially for existing playlists
