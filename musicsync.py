@@ -96,7 +96,7 @@ class MusicSync(object):
                 attempts = 0
                 result = []
                 while not result and attempts < MAX_UPLOAD_ATTEMPTS_PER_FILE:
-                    print "   attempting upload..."
+                    print "   uploading... (may take a while)"
                     attempts += 1
                     result = self.api.upload(fn)
                 if not result:
