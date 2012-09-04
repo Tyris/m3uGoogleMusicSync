@@ -37,6 +37,7 @@ import eyeD3
 import json
 import os
 import time
+import re
 from getpass import getpass
 
 MAX_UPLOAD_ATTEMPTS_PER_FILE = 3
@@ -140,6 +141,7 @@ class MusicSync(object):
         for line in f:
             line = line.rstrip().replace('\xef','').replace('\xbb','').replace('\xbf','')
             if line == "" or line[0] == "#" or not os.path.exists(line):
+                #print "Failed on: %s" % line
                 continue
             files.append(line)
         f.close()
@@ -152,7 +154,7 @@ class MusicSync(object):
             if goog_songs[i]['title'] == tag.getTitle() and\
             goog_songs[i]['artist'] == tag.getArtist() and\
             goog_songs[i]['album']  == tag.getAlbum() and\
-            goog_songs[i]['track'] == tag.getTrackNum()[0]:
+            goog_songs[i]['track'] == tag.track:
                 goog_songs.pop(i)
                 return True
             i += 1
@@ -163,17 +165,26 @@ class MusicSync(object):
         tag.link(filename)
         if not tag.getTitle():
             tag.setTitle(os.path.splitext(os.path.basename(filename))[0])
+        tag.track = tag.getTrackNum()[0]
+        if not tag.track:
+            m = re.match("\d+", os.path.basename(filename))
+            if m:
+                tag.track = int(m.group(0))
+            else:
+                tag.track = 0
         return tag
 
     def find_song(self, filename):
         tag = self.get_id3_tag(filename)
         results = self.api.search(tag.getTitle())
         # NOTE - dianostic print here to check results if you're creating duplicates
+        #print results['song_hits']
+        #print "%s - %s - %s - %s" % (tag.getTitle(), tag.getArtist(), tag.getAlbum(), tag.track)
         for r in results['song_hits']:
             if r['title'] == tag.getTitle() and\
             r['artist'] == tag.getArtist() and\
             r['album'] == tag.getAlbum() and\
-            r['track'] == tag.getTrackNum()[0]:
+            r['track'] == tag.track:
                 # TODO: add rough time check to make sure its "close"
                 return r
         return None
