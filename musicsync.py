@@ -90,7 +90,6 @@ class MusicSync(object):
                 continue
             print ""
             print "Adding: %s" % os.path.basename(fn)
-            time.sleep(.3) # Don't spam the server too fast...
             online = self.find_song(fn)
             song_id = None
             if online:
@@ -118,6 +117,7 @@ class MusicSync(object):
                 continue
 
             added = self.api.add_songs_to_playlist(plid, song_id)
+            time.sleep(.3) # Don't spam the server too fast...
             print "   done adding to playlist"
             added_files += 1
 
@@ -126,6 +126,7 @@ class MusicSync(object):
                 print ""
                 print "Removing: %s" % s['title']
                 self.api.remove_songs_from_playlist(plid, s.id)
+                time.sleep(.3) # Don't spam the server too fast...
                 removed_files += 1
 
         print ""
@@ -175,8 +176,8 @@ class MusicSync(object):
         tag = self.get_id3_tag(filename)
         results = self.api.search(tag['title'])
         # NOTE - dianostic print here to check results if you're creating duplicates
-        print results['song_hits']
-        print "%s ][ %s ][ %s ][ %s" % (tag['title'], tag['artist'], tag['album'], tag['track'])
+        #print results['song_hits']
+        #print "%s ][ %s ][ %s ][ %s" % (tag['title'], tag['artist'], tag['album'], tag['track'])
         for r in results['song_hits']:
             if self.tag_compare(r, tag):
                 # TODO: add rough time check to make sure its "close"
