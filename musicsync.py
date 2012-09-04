@@ -38,6 +38,7 @@ import json
 import os
 import time
 import re
+import codecs
 from getpass import getpass
 
 MAX_UPLOAD_ATTEMPTS_PER_FILE = 3
@@ -137,11 +138,11 @@ class MusicSync(object):
 
     def get_files_from_playlist(self, filename):
         files = []
-        f = open(filename, 'r')
+        f = codecs.open(filename, encoding='utf-8')
         for line in f:
-            line = line.rstrip().replace('\xef','').replace('\xbb','').replace('\xbf','')
+            line = line.rstrip().replace(u'\ufeff',u'')
             if line == "" or line[0] == "#" or not os.path.exists(line):
-                #print "Failed on: %s" % line
+                print "Failed on: %s" % line
                 continue
             files.append(line)
         f.close()
@@ -151,10 +152,7 @@ class MusicSync(object):
         tag = self.get_id3_tag(filename)
         i = 0
         while i < len(goog_songs):
-            if goog_songs[i]['title'] == tag.getTitle() and\
-            goog_songs[i]['artist'] == tag.getArtist() and\
-            goog_songs[i]['album']  == tag.getAlbum() and\
-            goog_songs[i]['track'] == tag.track:
+            if self.tag_compare(goog_songs[i], tag):
                 goog_songs.pop(i)
                 return True
             i += 1
@@ -163,31 +161,38 @@ class MusicSync(object):
     def get_id3_tag(self, filename):
         tag = eyeD3.Tag()
         tag.link(filename)
-        if not tag.getTitle():
-            tag.setTitle(os.path.splitext(os.path.basename(filename))[0])
-        tag.track = tag.getTrackNum()[0]
-        if not tag.track:
+        r = {}
+        r['title'] = tag.getTitle()
+        r['artist'] = tag.getArtist()
+        r['album'] = tag.getAlbum()
+        r['track'] = tag.getTrackNum()[0]
+        if not r['title']:
+            r['title'] = os.path.splitext(os.path.basename(filename))[0]
+        if not r['track']:
             m = re.match("\d+", os.path.basename(filename))
             if m:
-                tag.track = int(m.group(0))
+                r['track'] = int(m.group(0))
             else:
-                tag.track = 0
-        return tag
+                r['track'] = 0
+        return r
 
     def find_song(self, filename):
         tag = self.get_id3_tag(filename)
-        results = self.api.search(tag.getTitle())
+        results = self.api.search(tag['title'])
         # NOTE - dianostic print here to check results if you're creating duplicates
         #print results['song_hits']
-        #print "%s - %s - %s - %s" % (tag.getTitle(), tag.getArtist(), tag.getAlbum(), tag.track)
+        #print "%s - %s - %s - %s" % (tag['title'], tag['artist'], tag['album'], tag['track'])
         for r in results['song_hits']:
-            if r['title'] == tag.getTitle() and\
-            r['artist'] == tag.getArtist() and\
-            r['album'] == tag.getAlbum() and\
-            r['track'] == tag.track:
+            if self.tag_compare(r, tag):
                 # TODO: add rough time check to make sure its "close"
                 return r
         return None
+
+    def tag_compare(self, g_song, tag):
+        return g_song['title'] == tag['title'] and\
+               g_song['artist'] == tag['artist'] and\
+               g_song['album'] == tag['album'] and\
+               g_song['track'] == tag['track']
 
     def delete_song(self, sid):
         self.api.delete_songs(sid)
