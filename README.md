@@ -1,18 +1,26 @@
 Provides a utility class around the Google Music API that allows for easy syncing of m3u playlists.
 
 ##Features
+Choose a local playlist (m3u) to sync and it will:
+* Create or modify an existing Google Music playlist
+* Upload missing files
+* Handles unicode filenames or paths
+* Add uploaded (or files already online) to playlist
+* Optionally remove files not in local playlist (will not delete those files from the cloud)
+* Adds each file to playlist individually as soon as the file is online (instead of as a batch at
+the end)
+* Makes a best effort not to upload duplicate files by searching and comparing some basic info (this
+might fail if you modify id3 tags causing a duplicate to be uploaded)
 
-Currently it will look at all the files already in the playlist and:
-* Upload any missing files (and add them to the playlist)
-* Add any files that are already uploaded but not in the online playlist
-* Optionally remove any files from the playlist that are not in the local copy (does not delete
-* files!)
-* Uploads are done one by one followed by a playlist update for each file (rather than as a
- batch)
+It does not:
+* Remove duplicate entries from playlists
+* Support duplicate copies of a file in a playlist (this actually may work - but is untested)
+* Re-order playlists (only ensures they contain the same files)
 
-It does not remove duplicate entries from playlists or handle multiple entries.
-
-**TODO:** Add optional duplicate remover
+Todo:
+* Add option to remove duplicates from playlist
+* Allow and handle duplicates
+* Option to re-order playlists
 
 ##Usage
 
