@@ -33,7 +33,7 @@ __email__ = "tom@sirwhite.com"
 
 
 from gmusicapi.api import Api
-import eyeD3
+import mutagen
 import json
 import os
 import time
@@ -159,29 +159,24 @@ class MusicSync(object):
         return False
 
     def get_id3_tag(self, filename):
-        tag = eyeD3.Tag()
-        tag.link(filename)
+        data = mutagen.File(filename, easy=True)
         r = {}
-        r['title'] = tag.getTitle()
-        r['artist'] = tag.getArtist()
-        r['album'] = tag.getAlbum()
-        r['track'] = tag.getTrackNum()[0]
-        if not r['title']:
-            r['title'] = os.path.splitext(os.path.basename(filename))[0]
-        if not r['track']:
+        r['title'] = data['title'][0] if 'title' in data else os.path.splitext(os.path.basename(filename))[0]
+        r['track'] = int(data['tracknumber'][0].split('/')[0]) if 'tracknumber' in data else 0
+        if r['track'] == 0:
             m = re.match("\d+", os.path.basename(filename))
             if m:
                 r['track'] = int(m.group(0))
-            else:
-                r['track'] = 0
+        r['artist'] = data['artist'][0] if 'artist' in data else ''
+        r['album'] = data['album'][0] if 'album' in data else ''
         return r
 
     def find_song(self, filename):
         tag = self.get_id3_tag(filename)
         results = self.api.search(tag['title'])
         # NOTE - dianostic print here to check results if you're creating duplicates
-        #print results['song_hits']
-        #print "%s - %s - %s - %s" % (tag['title'], tag['artist'], tag['album'], tag['track'])
+        print results['song_hits']
+        print "%s ][ %s ][ %s ][ %s" % (tag['title'], tag['artist'], tag['album'], tag['track'])
         for r in results['song_hits']:
             if self.tag_compare(r, tag):
                 # TODO: add rough time check to make sure its "close"
