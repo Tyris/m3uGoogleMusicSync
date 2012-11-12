@@ -4,6 +4,9 @@ Scripts/
 *.m3u
 password.txt
 gmusicapi.log
+__sync.bat
+sync.py
+venv.bat
 
 #################
 ## Eclipse
