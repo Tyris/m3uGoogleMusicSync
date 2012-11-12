@@ -1,0 +1,6 @@
+chardet==1.1
+decorator==3.3.3
+gmusicapi==2012.08.31
+mutagen==1.20
+protobuf==2.4.1
+validictory==0.8.3
