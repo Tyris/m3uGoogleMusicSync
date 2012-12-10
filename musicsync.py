@@ -146,7 +146,7 @@ class MusicSync(object):
             line = line.rstrip().replace(u'\ufeff',u'')
             if line == "" or line[0] == "#":
                 continue
-            path  = os.path.abspath(get_platform_path(line))
+            path  = os.path.abspath(self.get_platform_path(line))
             if not os.path.exists(path):
                 print "Failed on: %s" % line
                 continue
@@ -199,7 +199,7 @@ class MusicSync(object):
         self.api.delete_songs(sid)
         print "Deleted song by id [%s]" % sid
 
-    def get_platform_path(full_path):
+    def get_platform_path(self, full_path):
         # Try to avoid messing with the path if possible
         if os.sep == '/' and '\\' not in full_path:
             return full_path
