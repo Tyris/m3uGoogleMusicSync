@@ -191,7 +191,7 @@ class MusicSync(object):
 
     def tag_compare(self, g_song, tag):
         # If a google result has no track, google doesn't return a field for it
-        if 'track' in g_song:
+        if 'track' not in g_song:
             g_song['track'] = 0
         return g_song['title'] == tag['title'] and\
                g_song['artist'] == tag['artist'] and\
