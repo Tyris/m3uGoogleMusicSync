@@ -66,6 +66,7 @@ class MusicSync(object):
         print ""
 
     def sync_playlist(self, filename, remove_missing=False):
+        os.chdir(os.path.dirname(filename))
         title = os.path.splitext(os.path.basename(filename))[0]
         print "Synching playlist: %s" % filename
         if title not in self.playlists['user']:
@@ -142,10 +143,13 @@ class MusicSync(object):
         f = codecs.open(filename, encoding='utf-8')
         for line in f:
             line = line.rstrip().replace(u'\ufeff',u'')
-            if line == "" or line[0] == "#" or not os.path.exists(line):
+            if line == "" or line[0] == "#":
+                continue
+            path  = os.path.abspath(line)
+            if not os.path.exists(path):
                 print "Failed on: %s" % line
                 continue
-            files.append(line)
+            files.append(path)
         f.close()
         return files
 
