@@ -40,8 +40,11 @@ import time
 import re
 import codecs
 from getpass import getpass
+from httplib import BadStatusLine, CannotSendRequest
 
 MAX_UPLOAD_ATTEMPTS_PER_FILE = 3
+MAX_CONNECTION_ERRORS_BEFORE_QUIT = 5
+STANDARD_SLEEP = 5
 
 class MusicSync(object):
     def __init__(self, email=None, password=None):
@@ -50,22 +53,32 @@ class MusicSync(object):
             email = raw_input("Email: ")
         if not password:
             password = getpass()
-        self.logged_in = self.api.login(email, password)
 
-        if not self.logged_in:
-            print "Login failed..."
-            return
+        self.email = email
+        self.password = password
 
-        print ""
-        print "Logged in as %s" % email
-        print ""
+        self.logged_in = self.auth()
 
         print "Fetching playlists from Google..."
         self.playlists = self.api.get_all_playlist_ids(auto=False, always_id_lists=True)
         print "Got %d playlists." % len(self.playlists['user'])
         print ""
 
+
+    def auth(self):
+        self.logged_in = self.api.login(self.email, self.password)
+        if not self.logged_in:
+            print "Login failed..."
+            exit()
+
+        print ""
+        print "Logged in as %s" % self.email
+        print ""
+
+
     def sync_playlist(self, filename, remove_missing=False):
+        filename = self.get_platform_path(filename)
+        os.chdir(os.path.dirname(filename))
         title = os.path.splitext(os.path.basename(filename))[0]
         print "Synching playlist: %s" % filename
         if title not in self.playlists['user']:
@@ -83,6 +96,7 @@ class MusicSync(object):
         added_files = 0
         failed_files = 0
         removed_files = 0
+        fatal_count = 0
 
         for fn in pc_songs:
             if self.file_already_in_list(fn, goog_songs):
@@ -103,9 +117,24 @@ class MusicSync(object):
                     attempts += 1
                     try:
                         result = self.api.upload(fn)
+                    except (BadStatusLine, CannotSendRequest):
+                        # Bail out if we're getting too many disconnects
+                        if fatal_count >= MAX_CONNECTION_ERRORS_BEFORE_QUIT:
+                            print ""
+                            print "Too many disconnections - quitting. Please try running the script again."
+                            print ""
+                            exit()
+
+                        print "Connection Error -- Reattempting login"
+                        fatal_count += 1
+                        self.api.logout()
+                        result = []
+                        time.sleep(STANDARD_SLEEP)
+
                     except:
                         result = []
-                        time.sleep(5)
+                        time.sleep(STANDARD_SLEEP)
+
                 if not result:
                     print "      upload failed - skipping"
                 else:
@@ -142,10 +171,13 @@ class MusicSync(object):
         f = codecs.open(filename, encoding='utf-8')
         for line in f:
             line = line.rstrip().replace(u'\ufeff',u'')
-            if line == "" or line[0] == "#" or not os.path.exists(line):
+            if line == "" or line[0] == "#":
+                continue
+            path  = os.path.abspath(self.get_platform_path(line))
+            if not os.path.exists(path):
                 print "Failed on: %s" % line
                 continue
-            files.append(line)
+            files.append(path)
         f.close()
         return files
 
@@ -162,10 +194,20 @@ class MusicSync(object):
     def get_id3_tag(self, filename):
         data = mutagen.File(filename, easy=True)
         r = {}
-        r['title'] = data['title'][0] if 'title' in data else os.path.splitext(os.path.basename(filename))[0]
+        if 'title' not in data:
+            title = os.path.splitext(os.path.basename(filename))[0]
+            print 'Found song with no ID3 title, setting using filename:'
+            print '  %s' % title
+            print '  (please note - the id3 format used (v2.4) is invisible to windows)'
+            data['title'] = [title]
+            data.save()
+        r['title'] = data['title'][0]
         r['track'] = int(data['tracknumber'][0].split('/')[0]) if 'tracknumber' in data else 0
+        # If there is no track, try and get a track number off the front of the file... since thats
+        # what google seems to do...
+        # Not sure how google expects it to be formatted, for now this is a best guess
         if r['track'] == 0:
-            m = re.match("\d+", os.path.basename(filename))
+            m = re.match("(\d+) ", os.path.basename(filename))
             if m:
                 r['track'] = int(m.group(0))
         r['artist'] = data['artist'][0] if 'artist' in data else ''
@@ -185,6 +227,9 @@ class MusicSync(object):
         return None
 
     def tag_compare(self, g_song, tag):
+        # If a google result has no track, google doesn't return a field for it
+        if 'track' not in g_song:
+            g_song['track'] = 0
         return g_song['title'] == tag['title'] and\
                g_song['artist'] == tag['artist'] and\
                g_song['album'] == tag['album'] and\
@@ -193,3 +238,13 @@ class MusicSync(object):
     def delete_song(self, sid):
         self.api.delete_songs(sid)
         print "Deleted song by id [%s]" % sid
+
+    def get_platform_path(self, full_path):
+        # Try to avoid messing with the path if possible
+        if os.sep == '/' and '\\' not in full_path:
+            return full_path
+        if os.sep == '\\' and '\\' in full_path:
+            return full_path
+        if '\\' not in full_path:
+            return full_path
+        return os.path.normpath(full_path.replace('\\', '/'))
