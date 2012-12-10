@@ -40,8 +40,11 @@ import time
 import re
 import codecs
 from getpass import getpass
+from httplib import BadStatusLine, CannotSendRequest
 
 MAX_UPLOAD_ATTEMPTS_PER_FILE = 3
+MAX_CONNECTION_ERRORS_BEFORE_QUIT = 5
+STANDARD_SLEEP = 5
 
 class MusicSync(object):
     def __init__(self, email=None, password=None):
@@ -50,20 +53,28 @@ class MusicSync(object):
             email = raw_input("Email: ")
         if not password:
             password = getpass()
-        self.logged_in = self.api.login(email, password)
 
-        if not self.logged_in:
-            print "Login failed..."
-            return
+        self.email = email
+        self.password = password
 
-        print ""
-        print "Logged in as %s" % email
-        print ""
+        self.logged_in = self.auth()
 
         print "Fetching playlists from Google..."
         self.playlists = self.api.get_all_playlist_ids(auto=False, always_id_lists=True)
         print "Got %d playlists." % len(self.playlists['user'])
         print ""
+
+
+    def auth(self):
+        self.logged_in = self.api.login(self.email, self.password)
+        if not self.logged_in:
+            print "Login failed..."
+            exit()
+
+        print ""
+        print "Logged in as %s" % self.email
+        print ""
+
 
     def sync_playlist(self, filename, remove_missing=False):
         filename = self.get_platform_path(filename)
@@ -85,6 +96,7 @@ class MusicSync(object):
         added_files = 0
         failed_files = 0
         removed_files = 0
+        fatal_count = 0
 
         for fn in pc_songs:
             if self.file_already_in_list(fn, goog_songs):
@@ -105,9 +117,24 @@ class MusicSync(object):
                     attempts += 1
                     try:
                         result = self.api.upload(fn)
+                    except (BadStatusLine, CannotSendRequest):
+                        # Bail out if we're getting too many disconnects
+                        if fatal_count >= MAX_CONNECTION_ERRORS_BEFORE_QUIT:
+                            print ""
+                            print "Too many disconnections - quitting. Please try running the script again."
+                            print ""
+                            exit()
+
+                        print "Connection Error -- Reattempting login"
+                        fatal_count += 1
+                        self.api.logout()
+                        result = []
+                        time.sleep(STANDARD_SLEEP)
+
                     except:
                         result = []
-                        time.sleep(5)
+                        time.sleep(STANDARD_SLEEP)
+
                 if not result:
                     print "      upload failed - skipping"
                 else:
