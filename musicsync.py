@@ -194,10 +194,20 @@ class MusicSync(object):
     def get_id3_tag(self, filename):
         data = mutagen.File(filename, easy=True)
         r = {}
-        r['title'] = data['title'][0] if 'title' in data else os.path.splitext(os.path.basename(filename))[0]
+        if 'title' not in data:
+            title = os.path.splitext(os.path.basename(filename))[0]
+            print 'Found song with no ID3 title, setting using filename:'
+            print '  %s' % title
+            print '  (please note - the id3 format used (v2.4) is invisible to windows)'
+            data['title'] = [title]
+            data.save()
+        r['title'] = data['title'][0]
         r['track'] = int(data['tracknumber'][0].split('/')[0]) if 'tracknumber' in data else 0
+        # If there is no track, try and get a track number off the front of the file... since thats
+        # what google seems to do...
+        # Not sure how google expects it to be formatted, for now this is a best guess
         if r['track'] == 0:
-            m = re.match("\d+", os.path.basename(filename))
+            m = re.match("(\d+) ", os.path.basename(filename))
             if m:
                 r['track'] = int(m.group(0))
         r['artist'] = data['artist'][0] if 'artist' in data else ''
