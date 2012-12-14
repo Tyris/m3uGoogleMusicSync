@@ -230,9 +230,9 @@ class MusicSync(object):
         # If a google result has no track, google doesn't return a field for it
         if 'track' not in g_song:
             g_song['track'] = 0
-        return g_song['title'] == tag['title'] and\
-               g_song['artist'] == tag['artist'] and\
-               g_song['album'] == tag['album'] and\
+        return g_song['title'].lower() == tag['title'].lower() and\
+               g_song['artist'].lower() == tag['artist'].lower() and\
+               g_song['album'].lower() == tag['album'].lower() and\
                g_song['track'] == tag['track']
 
     def delete_song(self, sid):
