@@ -24,6 +24,10 @@ Todo:
 * Allow and handle duplicates
 * Option to re-order playlists
 
+Latest [2013/03/11]
+* Fixed to work with latest changes to API
+* Unfortunately now require avconv for most uploads (see http://unofficial-google-music-api.readthedocs.org/en/latest/usage.html#usage)
+
 Latest [2012/12/10]
 * Fixed bug with uploaded files that had no track causing an inability to sync that playlist anymore
 * Improved "already uploaded" detection (title and track checking)
@@ -50,6 +54,7 @@ relative file locations
 ##Requirements
 Requires:
 * gmusicapi (can use: pip install gmusicapi - or get it from https://github.com/simon-weber/Unofficial-Google-Music-API)
+* avconv (see http://unofficial-google-music-api.readthedocs.org/en/latest/usage.html#usage)
 
 - - -
 

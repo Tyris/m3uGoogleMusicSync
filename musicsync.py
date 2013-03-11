@@ -60,7 +60,7 @@ class MusicSync(object):
         self.logged_in = self.auth()
 
         print "Fetching playlists from Google..."
-        self.playlists = self.api.get_all_playlist_ids(auto=False, always_id_lists=True)
+        self.playlists = self.api.get_all_playlist_ids(auto=False)
         print "Got %d playlists." % len(self.playlists['user'])
         print ""
 
@@ -135,11 +135,14 @@ class MusicSync(object):
                         result = []
                         time.sleep(STANDARD_SLEEP)
 
-                if not result:
-                    print "      upload failed - skipping"
-                else:
-                    song_id = result[fn]
+                try:
+                    if result[0]:
+                        song_id = result[0].itervalues().next()
+                    else:
+                        song_id = result[1].itervalues().next()
                     print "   upload complete [%s]" % song_id
+                except:
+                    print "      upload failed - skipping"
 
             if not song_id:
                 failed_files += 1
