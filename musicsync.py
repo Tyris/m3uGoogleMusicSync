@@ -45,6 +45,7 @@ from httplib import BadStatusLine, CannotSendRequest
 MAX_UPLOAD_ATTEMPTS_PER_FILE = 3
 MAX_CONNECTION_ERRORS_BEFORE_QUIT = 5
 STANDARD_SLEEP = 5
+MAX_SONGS_IN_PLAYLIST = 1000
 
 class MusicSync(object):
     def __init__(self, email=None, password=None):
@@ -91,6 +92,12 @@ class MusicSync(object):
         print "%d songs already in Google Music playlist" % len(goog_songs)
         pc_songs = self.get_files_from_playlist(filename)
         print "%d songs in local playlist" % len(pc_songs)
+
+        # Sanity check max 1000 songs per playlist
+        if len(pc_songs) > MAX_SONGS_IN_PLAYLIST:
+            print "    Google music doesn't allow more than %d songs in a playlist..." % MAX_SONGS_IN_PLAYLIST
+            print "    Will only attempt to sync the first %d songs." % MAX_SONGS_IN_PLAYLIST
+            del pc_songs[MAX_SONGS_IN_PLAYLIST:]
 
         existing_files = 0
         added_files = 0
