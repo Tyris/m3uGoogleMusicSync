@@ -178,7 +178,7 @@ class MusicSync(object):
                 continue
             path  = os.path.abspath(self.get_platform_path(line))
             if not os.path.exists(path):
-                print "Failed on: %s" % line
+                print "File not found: %s" % line
                 continue
             files.append(path)
         f.close()
