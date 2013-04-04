@@ -32,7 +32,8 @@ __author__ = "Tom Graham"
 __email__ = "tom@sirwhite.com"
 
 
-from gmusicapi.api import Api
+from gmusicapi import Webclient, Musicmanager
+from gmusicapi.clients import OAUTH_FILEPATH
 import mutagen
 import json
 import os
@@ -46,10 +47,12 @@ MAX_UPLOAD_ATTEMPTS_PER_FILE = 3
 MAX_CONNECTION_ERRORS_BEFORE_QUIT = 5
 STANDARD_SLEEP = 5
 MAX_SONGS_IN_PLAYLIST = 1000
+LOCAL_OAUTH_FILE = './oauth.cred'
 
 class MusicSync(object):
     def __init__(self, email=None, password=None):
-        self.api = Api()
+        self.mm = Musicmanager()
+        self.wc = Webclient()
         if not email:
             email = raw_input("Email: ")
         if not password:
@@ -61,19 +64,30 @@ class MusicSync(object):
         self.logged_in = self.auth()
 
         print "Fetching playlists from Google..."
-        self.playlists = self.api.get_all_playlist_ids(auto=False)
+        self.playlists = self.wc.get_all_playlist_ids(auto=False)
         print "Got %d playlists." % len(self.playlists['user'])
         print ""
 
 
     def auth(self):
-        self.logged_in = self.api.login(self.email, self.password)
+        self.logged_in = self.wc.login(self.email, self.password)
         if not self.logged_in:
             print "Login failed..."
             exit()
 
         print ""
         print "Logged in as %s" % self.email
+        print ""
+
+        if not os.path.isfile(OAUTH_FILEPATH):
+            print "First time login. Please follow the instructions below:"
+            self.mm.perform_oauth()
+        self.logged_in = self.mm.login()
+        if not self.logged_in:
+            print "OAuth failed... try deleting your %s file and trying again." % OAUTH_FILEPATH
+            exit()
+
+        print "Authenticated"
         print ""
 
 
@@ -84,11 +98,11 @@ class MusicSync(object):
         print "Synching playlist: %s" % filename
         if title not in self.playlists['user']:
             print "   didn't exist... creating..."
-            self.playlists['user'][title] = [self.api.create_playlist(title)]
+            self.playlists['user'][title] = [self.wc.create_playlist(title)]
         print ""
 
         plid = self.playlists['user'][title][0]
-        goog_songs = self.api.get_playlist_songs(plid)
+        goog_songs = self.wc.get_playlist_songs(plid)
         print "%d songs already in Google Music playlist" % len(goog_songs)
         pc_songs = self.get_files_from_playlist(filename)
         print "%d songs in local playlist" % len(pc_songs)
@@ -123,7 +137,7 @@ class MusicSync(object):
                     print "   uploading... (may take a while)"
                     attempts += 1
                     try:
-                        result = self.api.upload(fn)
+                        result = self.mm.upload(fn)
                     except (BadStatusLine, CannotSendRequest):
                         # Bail out if we're getting too many disconnects
                         if fatal_count >= MAX_CONNECTION_ERRORS_BEFORE_QUIT:
@@ -134,7 +148,8 @@ class MusicSync(object):
 
                         print "Connection Error -- Reattempting login"
                         fatal_count += 1
-                        self.api.logout()
+                        self.wc.logout()
+                        self.mm.logout()
                         result = []
                         time.sleep(STANDARD_SLEEP)
 
@@ -155,7 +170,7 @@ class MusicSync(object):
                 failed_files += 1
                 continue
 
-            added = self.api.add_songs_to_playlist(plid, song_id)
+            added = self.wc.add_songs_to_playlist(plid, song_id)
             time.sleep(.3) # Don't spam the server too fast...
             print "   done adding to playlist"
             added_files += 1
@@ -164,7 +179,7 @@ class MusicSync(object):
             for s in goog_songs:
                 print ""
                 print "Removing: %s" % s['title']
-                self.api.remove_songs_from_playlist(plid, s.id)
+                self.wc.remove_songs_from_playlist(plid, s.id)
                 time.sleep(.3) # Don't spam the server too fast...
                 removed_files += 1
 
@@ -226,7 +241,7 @@ class MusicSync(object):
 
     def find_song(self, filename):
         tag = self.get_id3_tag(filename)
-        results = self.api.search(tag['title'])
+        results = self.wc.search(tag['title'])
         # NOTE - dianostic print here to check results if you're creating duplicates
         #print results['song_hits']
         #print "%s ][ %s ][ %s ][ %s" % (tag['title'], tag['artist'], tag['album'], tag['track'])
@@ -246,7 +261,7 @@ class MusicSync(object):
                g_song['track'] == tag['track']
 
     def delete_song(self, sid):
-        self.api.delete_songs(sid)
+        self.wc.delete_songs(sid)
         print "Deleted song by id [%s]" % sid
 
     def get_platform_path(self, full_path):

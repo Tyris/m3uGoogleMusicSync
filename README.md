@@ -24,6 +24,9 @@ Todo:
 * Allow and handle duplicates
 * Option to re-order playlists
 
+Latest [2013/04/04]
+* Fixed to work with latest changes to API (v1.0.0 and above) This means it now uses OAuth for uploading... unfortunately this means you have to log in twice. If you're upgrading you'll need to 'pip uninstall gmusicapi' and then 'pip install gmusicapi' since the versioning changed (you might also need to use --upgrade to upgrade denendencies).
+
 Latest [2013/03/11]
 * Fixed to work with latest changes to API
 * Unfortunately now require avconv for most uploads (see http://unofficial-google-music-api.readthedocs.org/en/latest/usage.html#usage)
@@ -40,6 +43,7 @@ relative file locations
     from musicsync import MusicSync
     ms = MusicSync()
     # Will prompt for Email and Password - if 2-factor auth is on you'll need to generate a one-time password
+    # The first time you use this (or another script that uses gmusicapi) you will be prompted to authenticate via an OAuth browser window
 
     # To sync a playlist
     ms.sync_playlist("c:/path/to/playlist.m3u")
